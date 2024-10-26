@@ -2,9 +2,38 @@ package crypto
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 )
+
+type eccSigner struct {
+	keyPair ECCKeyPair
+}
+
+func NewEccSigner() (Signer, error) {
+	keyGen := ECCGenerator{}
+	keyPair, err := keyGen.Generate()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &eccSigner{
+		keyPair: *keyPair,
+	}, nil
+}
+
+func (s *eccSigner) Sign(dataToBeSigned []byte) ([]byte, error) {
+	hashed := sha256.Sum256(dataToBeSigned)
+	return ecdsa.SignASN1(rand.Reader, s.keyPair.Private, hashed[:])
+}
+
+func (s *eccSigner) Verify(dataToBeVerified []byte, signature []byte) bool {
+	hashed := sha256.Sum256(dataToBeVerified)
+	return ecdsa.VerifyASN1(s.keyPair.Public, hashed[:], signature)
+}
 
 // ECCKeyPair is a DTO that holds ECC private and public keys.
 type ECCKeyPair struct {

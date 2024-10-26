@@ -1,10 +1,41 @@
 package crypto
 
 import (
+	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 )
+
+type rsaSigner struct {
+	keyPair RSAKeyPair
+}
+
+func NewRsaSigner() (Signer, error) {
+	keyGen := RSAGenerator{}
+	keyPair, err := keyGen.Generate()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &rsaSigner{
+		keyPair: *keyPair,
+	}, nil
+}
+
+func (s *rsaSigner) Sign(dataToBeSigned []byte) ([]byte, error) {
+	hashed := sha256.Sum256(dataToBeSigned)
+	return rsa.SignPKCS1v15(rand.Reader, s.keyPair.Private, crypto.SHA256, hashed[:])
+}
+
+func (s *rsaSigner) Verify(dataToBeVerified []byte, signature []byte) bool {
+	hashed := sha256.Sum256(dataToBeVerified)
+	err := rsa.VerifyPKCS1v15(s.keyPair.Public, crypto.SHA256, hashed[:], signature)
+	return err == nil
+}
 
 // RSAKeyPair is a DTO that holds RSA private and public keys.
 type RSAKeyPair struct {

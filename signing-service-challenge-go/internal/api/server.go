@@ -3,6 +3,10 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/domain"
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/errors"
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/persistence"
 )
 
 // Response is the generic API response container.
@@ -17,14 +21,15 @@ type ErrorResponse struct {
 
 // Server manages HTTP requests and dispatches them to the appropriate services.
 type Server struct {
-	listenAddress string
+	listenAddress          string
+	signatureDeviceService domain.SignatureDeviceService
 }
 
 // NewServer is a factory to instantiate a new Server.
 func NewServer(listenAddress string) *Server {
 	return &Server{
-		listenAddress: listenAddress,
-		// TODO: add services / further dependencies here ...
+		listenAddress:          listenAddress,
+		signatureDeviceService: domain.NewSignatureDeviceService(persistence.NewSignatureDeviceInMemoryRepo()),
 	}
 }
 
@@ -33,8 +38,9 @@ func (s *Server) Run() error {
 	mux := http.NewServeMux()
 
 	mux.Handle("/api/v0/health", http.HandlerFunc(s.Health))
-
-	// TODO: register further HandlerFuncs here ...
+	mux.Handle("/api/v0/devices", http.HandlerFunc(s.Devices))
+	mux.Handle("/api/v0/devices/{deviceId}", http.HandlerFunc(s.Device))
+	mux.Handle("/api/v0/devices/{deviceId}/signatures", http.HandlerFunc(s.Signatures))
 
 	return http.ListenAndServe(s.listenAddress, mux)
 }
@@ -51,7 +57,7 @@ func WriteErrorResponse(w http.ResponseWriter, code int, errors []string) {
 	w.WriteHeader(code)
 
 	errorResponse := ErrorResponse{
-		Errors: errors,
+		Errors: append([]string{http.StatusText(code)}, errors...),
 	}
 
 	bytes, err := json.Marshal(errorResponse)
@@ -77,4 +83,17 @@ func WriteAPIResponse(w http.ResponseWriter, code int, data interface{}) {
 	}
 
 	w.Write(bytes)
+}
+
+func statusCodeFromError(error error) int {
+	switch error.(type) {
+	case errors.NotFoundError:
+		return http.StatusNotFound
+	case errors.ConflictError:
+		return http.StatusConflict
+	case errors.BadInputError:
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
 }
