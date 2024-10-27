@@ -56,3 +56,15 @@ func (r *SignatureDeviceInMemoryRepo) GetById(id string) (*domain.SignatureDevic
 
 	return device, nil
 }
+
+func (r *SignatureDeviceInMemoryRepo) UpdateSigningMetaInfo(id string, counter int, lastSignature string) (*domain.SignatureDevice, error) {
+	device, err := r.GetById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	device.SignatureCounter = counter
+	device.LastSignature = lastSignature
+
+	return device, nil
+}

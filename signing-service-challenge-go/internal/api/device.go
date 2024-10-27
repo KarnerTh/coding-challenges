@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/crypto"
-	"github.com/go-playground/validator/v10"
 )
 
 type createDeviceRequest struct {
@@ -44,7 +43,6 @@ func (s *Server) Devices(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		validate := validator.New(validator.WithRequiredStructEnabled())
 		err = validate.Struct(deviceRequest)
 		if err != nil {
 			WriteErrorResponse(response, http.StatusBadRequest, []string{

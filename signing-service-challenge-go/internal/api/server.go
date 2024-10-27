@@ -7,7 +7,10 @@ import (
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/domain"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/errors"
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/persistence"
+	"github.com/go-playground/validator/v10"
 )
+
+var validate = validator.New(validator.WithRequiredStructEnabled())
 
 // Response is the generic API response container.
 type Response struct {
