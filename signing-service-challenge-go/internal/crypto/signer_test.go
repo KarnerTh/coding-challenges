@@ -19,7 +19,6 @@ func TestSigner(t *testing.T) {
 	for _, test := range availableSigners {
 		t.Run(string(test.algoritym), func(t *testing.T) {
 			t.Parallel()
-
 			t.Run("Valid signature", func(t *testing.T) {
 				t.Parallel()
 				dataToBeSigned := []byte("data")

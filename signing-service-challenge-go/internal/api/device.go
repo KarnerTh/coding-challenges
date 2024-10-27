@@ -51,7 +51,11 @@ func (s *Server) Devices(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 
-		device, err := s.signatureDeviceService.Create(deviceRequest.Id, deviceRequest.Algorithm, deviceRequest.Label)
+		device, err := s.signatureDeviceService.Create(
+			deviceRequest.Id,
+			deviceRequest.Algorithm,
+			deviceRequest.Label,
+		)
 		if err != nil {
 			WriteErrorResponse(response, statusCodeFromError(err), []string{
 				err.Error(),

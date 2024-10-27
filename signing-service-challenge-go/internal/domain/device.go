@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/crypto"
+	"github.com/fiskaly/coding-challenges/signing-service-challenge/internal/errors"
 )
 
 type SignatureDevice struct {
@@ -41,7 +42,7 @@ type SignatureDeviceRepository interface {
 
 func (s SignatureDeviceService) Create(id string, algorithm crypto.SignatureAlgorithm, label string) (*SignatureDevice, error) {
 	if len(id) == 0 {
-		return nil, fmt.Errorf("id must be specified")
+		return nil, errors.BadInputError{Msg: "id must be specified"}
 	}
 
 	signer, err := crypto.CreateSigner(algorithm)
@@ -67,7 +68,7 @@ func (s SignatureDeviceService) GetAll() ([]*SignatureDevice, error) {
 
 func (s SignatureDeviceService) GetById(id string) (*SignatureDevice, error) {
 	if len(id) == 0 {
-		return nil, fmt.Errorf("id must be specified")
+		return nil, errors.BadInputError{Msg: "id must be specified"}
 	}
 
 	return s.repo.GetById(id)
@@ -79,8 +80,12 @@ func (s SignatureDeviceService) Sign(deviceId string, data string) (*Signature, 
 		return nil, err
 	}
 
+	slog.Debug("Acquire device lock", "id", deviceId)
 	device.mu.Lock()
-	defer device.mu.Unlock()
+	defer func() {
+		slog.Debug("Release device lock", "id", deviceId)
+		device.mu.Unlock()
+	}()
 
 	signData := fmt.Sprintf("%d_%s_%s", device.SignatureCounter, data, device.LastSignature)
 	slog.Debug("data is being signed", "value", signData)
